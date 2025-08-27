@@ -19,6 +19,7 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/SipHash.h"
+#include "clang/Support/SwizzleUtils.h"
 
 namespace clang {
 namespace interp {
@@ -3019,6 +3020,53 @@ bool InterpretBuiltin(InterpState &S, CodePtr OpPC, const CallExpr *Call,
   case Builtin::BI__builtin_ffsl:
   case Builtin::BI__builtin_ffsll:
     return interp__builtin_ffs(S, OpPC, Frame, Call);
+  case Builtin::BI__builtin_f2_gemv:{
+    PrimType RowIndexArgT = *S.getContext().classify(Call->getArg(0)->getType());
+    APSInt Vector = popToAPSInt(S.Stk, RowIndexArgT);
+    auto VectorValue = Vector.getZExtValue();
+    uint32_t Result = 0;
+    for (auto i = 1u; i < Call->getNumArgs(); i++, VectorValue>>=1) {
+      PrimType MatrixColArgT = *S.getContext().classify(Call->getArg(i)->getType());
+      APSInt MatrixCol = popToAPSInt(S.Stk, MatrixColArgT);
+      if(VectorValue & 0x1) Result ^= (uint32_t)MatrixCol.getZExtValue();
+    }
+    pushInteger(S, Result, Call->getType());
+    return true;
+  }
+  case Builtin::BI__builtin_swizzle_solve:{
+
+    
+
+    PrimType RowIndexArgT = *S.getContext().classify(Call->getArg(0)->getType());
+    APSInt RowIndex = popToAPSInt(S.Stk, RowIndexArgT);
+    PrimType BitsArgT = *S.getContext().classify(Call->getArg(1)->getType());
+    APSInt Bits = popToAPSInt(S.Stk, BitsArgT);
+
+
+    std::vector<swizzle::access_pattern> patterns;
+    for (auto i = 2u; i < Call->getNumArgs(); i += 3) {
+      APSInt PatternCols[3];
+      
+      for(auto j = 0; j < 3; j++){
+        PrimType ArgT = *S.getContext().classify(Call->getArg(i + j)->getType());
+        PatternCols[j] = popToAPSInt(S.Stk, ArgT);
+      }
+
+      patterns.emplace_back(swizzle::access_pattern { 
+        (uint32_t)PatternCols[0].getZExtValue(),
+        (uint32_t)PatternCols[1].getZExtValue(),
+        (uint32_t)PatternCols[2].getZExtValue() 
+      });
+    }
+
+    const auto result = swizzle::swizzle_solver::get_swizzle_solution((int)Bits.getExtValue(), patterns);
+
+    if(!result.has_value()) 
+      pushInteger(S, (1u << ((int)RowIndex.getExtValue())), Call->getType());
+    pushInteger(S, std::get<0>(result.value())[RowIndex.getSExtValue()], Call->getType());
+    
+    return true;
+  }
 
   case Builtin::BIaddressof:
   case Builtin::BI__addressof:

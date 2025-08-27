@@ -2199,6 +2199,60 @@ static bool BuiltinCpu(Sema &S, const TargetInfo &TI, CallExpr *TheCall,
   return false;
 }
 
+static bool BuiltinSwizzleSolve(Sema &S, CallExpr *TheCall){
+  auto nArgs = TheCall->getNumArgs();
+  if(nArgs < 2){
+    S.Diag(TheCall->getBeginLoc(),
+           diag::err_typecheck_call_too_few_args_at_least)
+        << /*callee_type=*/0 << /*min_arg_count=*/2 << /*actual_arg_count=*/nArgs
+        << /*is_non_object=*/0 << TheCall->getSourceRange();
+    return true;
+  }
+  if((nArgs - 2) % 3 != 0){
+    S.Diag(TheCall->getBeginLoc(),
+           diag::err_typecheck_call_too_few_args_at_least)
+        << /*callee_type=*/0 << /*min_arg_count=*/(nArgs + (3 - (nArgs - 2) % 3)) << /*actual_arg_count=*/nArgs
+        << /*is_non_object=*/0 << TheCall->getSourceRange();
+    return true;
+  }
+
+  for(auto i = 0u; i < nArgs; i++){
+    ExprResult ArgRes = S.DefaultLvalueConversion(TheCall->getArg(i));
+    if (ArgRes.isInvalid())
+      return true;
+    Expr *Arg = ArgRes.get();
+    TheCall->setArg(i, Arg);
+
+    QualType ArgTy = Arg->getType();
+
+    if (!ArgTy->isUnsignedIntegerType()) {
+      S.Diag(Arg->getBeginLoc(), diag::err_builtin_invalid_arg_type)
+          << 1 << /* scalar */ 1 << /* unsigned integer ty */ 3 << /* no fp */ 0
+          << ArgTy;
+      return true;
+    } 
+    Expr::EvalResult EvalRes{};
+    if(!Arg->EvaluateAsInt(EvalRes, S.Context)){
+      S.Diag(TheCall->getBeginLoc(), diag::err_invalid_consteval_call)
+          << static_cast<FunctionDecl *>(TheCall->getCalleeDecl()) << true;
+      return true;
+    }
+
+    const auto Value = EvalRes.Val.getInt().getExtValue();
+    if(i == 0 && (Value > 2 || Value < 0)){
+      S.Diag(TheCall->getBeginLoc(), diag::err_argument_invalid_range)
+             << llvm::toString(EvalRes.Val.getInt(), 10) << 0 << 2 << Arg->getSourceRange();
+      return true;
+    }
+    if(i == 1 && (Value > 20 || Value < 0)){
+      S.Diag(TheCall->getBeginLoc(), diag::err_argument_invalid_range)
+             << llvm::toString(EvalRes.Val.getInt(), 10) << 0 << 20 << Arg->getSourceRange();
+      return true;
+    }
+  }
+  return false;
+}
+
 /// Checks that __builtin_popcountg was called with a single argument, which is
 /// an unsigned integer.
 static bool BuiltinPopcountg(Sema &S, CallExpr *TheCall) {
@@ -3293,6 +3347,21 @@ Sema::CheckBuiltinFunctionCall(FunctionDecl *FDecl, unsigned BuiltinID,
     if (BuiltinPopcountg(*this, TheCall))
       return ExprError();
     break;
+
+  case Builtin::BI__builtin_swizzle_solve:{
+    if(BuiltinSwizzleSolve(*this, TheCall)) return ExprError();
+    break;
+  }
+  case Builtin::BI__builtin_f2_gemv:{
+    if(TheCall->getNumArgs() < 1){
+      Diag(TheCall->getBeginLoc(),
+           diag::err_typecheck_call_too_few_args_at_least)
+        << /*callee_type=*/0 << /*min_arg_count=*/1 << /*actual_arg_count=*/TheCall->getNumArgs()
+        << /*is_non_object=*/0 << TheCall->getSourceRange();
+      return ExprError();
+    }
+    break;
+  }
   case Builtin::BI__builtin_clzg:
   case Builtin::BI__builtin_ctzg:
     if (BuiltinCountZeroBitsGeneric(*this, TheCall))

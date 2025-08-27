@@ -720,6 +720,18 @@ def FFS : Builtin, BitInt_Long_LongLongTemplate {
   let Prototype = "int(T)";
 }
 
+def SwizzleSolve : Builtin {
+  let Spellings = ["__builtin_swizzle_solve"];
+  let Attributes = [NoThrow, Const, Constexpr, CustomTypeChecking];
+  let Prototype = "unsigned int(...)";
+}
+
+def F2DomainGEMV : Builtin {
+  let Spellings = ["__builtin_f2_gemv"];
+  let Attributes = [NoThrow, Const, Constexpr, CustomTypeChecking];
+  let Prototype = "unsigned int(...)";
+}
+
 def Parity : Builtin, BitInt_Long_LongLongTemplate {
   let Spellings = ["__builtin_parity"];
   let Attributes = [NoThrow, Const, Constexpr];

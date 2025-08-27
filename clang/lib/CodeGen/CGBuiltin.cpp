@@ -26,8 +26,10 @@
 #include "TargetInfo.h"
 #include "clang/AST/OSLog.h"
 #include "clang/AST/StmtVisitor.h"
+#include "clang/Basic/Builtins.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Frontend/FrontendDiagnostic.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Intrinsics.h"
@@ -3396,6 +3398,29 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
         Builder.CreateSelect(IsZero, FallbackValue, Result, "clzg");
     return RValue::get(ResultOrFallback);
   }
+  case Builtin::BI__builtin_f2_gemv:{
+    IntegerType* BoolType = llvm::Type::getInt1Ty(Builder.getContext());
+    IntegerType* AccType = llvm::Type::getInt32Ty(Builder.getContext());
+    Value *Vector = Builder.CreateZExtOrTrunc(EmitScalarExpr(E->getArg(0)), AccType);
+
+    Value *Result = llvm::ConstantInt::get(AccType, 0);
+    Value *One = llvm::ConstantInt::get(AccType, 0x1);
+
+    for(auto i = 1u; i < E->getNumArgs(); i++){
+      Value *MatrixCol = Builder.CreateZExtOrTrunc(EmitScalarExpr(E->getArg(i)), AccType);
+      Value *SelectBit = Builder.CreateTrunc(Builder.CreateAnd(Vector, One), BoolType);
+      Result = Builder.CreateSelect(SelectBit, Builder.CreateXor(MatrixCol, Result), Result);
+      Vector = Builder.CreateLShr(Vector, One);
+    }
+
+    return RValue::get(Result);
+  }
+  case Builtin::BI__builtin_swizzle_solve:{
+    Value *Result = llvm::ConstantInt::get(llvm::Type::getInt32Ty(Builder.getContext()), 0);
+    
+    return RValue::get(Result);
+  }
+
   case Builtin::BI__builtin_ffs:
   case Builtin::BI__builtin_ffsl:
   case Builtin::BI__builtin_ffsll: {
