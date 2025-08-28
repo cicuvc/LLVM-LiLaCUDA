@@ -3997,6 +3997,16 @@ def AssertCapability : InheritableAttr {
   let Documentation = [AssertCapabilityDocs];
 }
 
+def CUDAClusterDim : InheritableAttr {
+  let Spellings = [GNU<"cluster_dims">, Declspec<"cluster_dims">];
+  let Subjects = SubjectList<[FunctionLike]>;
+  let Documentation = [Undocumented];
+  let Args = [ExprArgument<"ClusterDimX">, ExprArgument<"ClusterDimY", 1>,
+              ExprArgument<"ClusterDimZ", 1>];
+  let LangOpts = [CUDA];
+  
+}
+
 def AcquireCapability : InheritableAttr {
   let Spellings = [Clang<"acquire_capability", 0>,
                    Clang<"acquire_shared_capability", 0>,

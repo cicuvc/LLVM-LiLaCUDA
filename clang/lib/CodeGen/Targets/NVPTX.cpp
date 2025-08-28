@@ -5,9 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-
+#include <sstream>
 #include "ABIInfoImpl.h"
 #include "TargetInfo.h"
+#include "clang/AST/Attrs.inc"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/IR/CallingConv.h"
@@ -278,6 +279,31 @@ void NVPTXTargetCodeGenInfo::setTargetAttributes(
         // Create !{<func-ref>, metadata !"kernel", i32 1} node
         F->setCallingConv(llvm::CallingConv::PTX_Kernel);
         addGridConstantNVVMMetadata(F, GCI);
+
+        if(FD->hasAttr<CUDAClusterDimAttr>()){
+          auto* ClusterDimAttr = FD->getAttr<CUDAClusterDimAttr>();
+
+          std::stringstream ClusterDimBuilder;
+
+          if(Expr *ClusterDimX = ClusterDimAttr->getClusterDimX()){
+            auto ClusterDimXValue = ClusterDimX->EvaluateKnownConstInt(M.getContext());
+            ClusterDimBuilder << ClusterDimXValue.getExtValue();
+          }
+
+          if(Expr *ClusterDimY = ClusterDimAttr->getClusterDimY()){
+            auto ClusterDimYValue = ClusterDimY->EvaluateKnownConstInt(M.getContext());
+            ClusterDimBuilder << ", " << ClusterDimYValue.getExtValue();
+          }
+
+          if(Expr *ClusterDimZ = ClusterDimAttr->getClusterDimZ()){
+            auto ClusterDimZValue = ClusterDimZ->EvaluateKnownConstInt(M.getContext());
+            ClusterDimBuilder << ", " << ClusterDimZValue.getExtValue();
+          }
+
+          if (F)
+            F->addFnAttr("nvvm.cluster_dim", llvm::StringRef{ClusterDimBuilder.str()});
+        }
+
       }
       if (CUDALaunchBoundsAttr *Attr = FD->getAttr<CUDALaunchBoundsAttr>())
         M.handleCUDALaunchBoundsAttr(F, Attr);

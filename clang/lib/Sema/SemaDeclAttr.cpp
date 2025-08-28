@@ -26,6 +26,7 @@
 #include "clang/Basic/CharInfo.h"
 #include "clang/Basic/Cuda.h"
 #include "clang/Basic/DarwinSDKInfo.h"
+#include "clang/Basic/DiagnosticLex.h"
 #include "clang/Basic/IdentifierTable.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
@@ -6198,6 +6199,17 @@ static void handleReentrantCapabilityAttr(Sema &S, Decl *D,
   D->addAttr(::new (S.Context) ReentrantCapabilityAttr(S.Context, AL));
 }
 
+static void handleCUDAClusterDimAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
+  SmallVector<Expr*, 3> Args;
+
+
+  auto *attr = ::new(S.Context) CUDAClusterDimAttr(
+    S.Context, AL, AL.getArgAsExpr(0) , 
+    AL.getNumArgs() >= 2 ? AL.getArgAsExpr(1) : nullptr, 
+    AL.getNumArgs() >= 3 ? AL.getArgAsExpr(2) : nullptr);
+  D->addAttr(attr);
+}
+
 static void handleAssertCapabilityAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
   SmallVector<Expr*, 1> Args;
   if (!checkLockFunAttrCommon(S, D, AL, Args))
@@ -7534,7 +7546,9 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
   case ParsedAttr::AT_RequiresCapability:
     handleRequiresCapabilityAttr(S, D, AL);
     break;
-
+  case ParsedAttr::AT_CUDAClusterDim:
+    handleCUDAClusterDimAttr(S, D, AL);
+    break;
   case ParsedAttr::AT_AssertCapability:
     handleAssertCapabilityAttr(S, D, AL);
     break;
