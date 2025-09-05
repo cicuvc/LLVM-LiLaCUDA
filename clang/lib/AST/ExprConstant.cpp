@@ -13603,21 +13603,21 @@ bool IntExprEvaluator::VisitBuiltinCallExpr(const CallExpr *E,
     if (!EvaluateInteger(E->getArg(1), Bits, Info))
       return false;
 
-    std::vector<swizzle::access_pattern> patterns;
+    std::vector<swizzle::AccessPattern> patterns;
     for (auto i = 2u; i < E->getNumArgs(); i += 3) {
       APSInt PatternCols[3];
       if (!(EvaluateInteger(E->getArg(i), PatternCols[0], Info) &&
             EvaluateInteger(E->getArg(i + 1), PatternCols[1], Info) &&
             EvaluateInteger(E->getArg(i + 2), PatternCols[2], Info)))
         return false;
-      patterns.emplace_back(swizzle::access_pattern { 
+      patterns.emplace_back(swizzle::AccessPattern { 
         (uint32_t)PatternCols[0].getZExtValue(),
         (uint32_t)PatternCols[1].getZExtValue(),
         (uint32_t)PatternCols[2].getZExtValue() 
       });
     }
 
-    const auto result = swizzle::swizzle_solver::get_swizzle_solution((int)Bits.getExtValue(), patterns);
+    const auto result = swizzle::SwizzleSolver::getSwizzleSolution((int)Bits.getExtValue(), patterns);
 
     if(!result.has_value()) return Success((1u << ((int)RowIndex.getExtValue())), E);
     return Success(std::get<0>(result.value())[RowIndex.getSExtValue()], E);

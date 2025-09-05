@@ -3103,7 +3103,7 @@ bool InterpretBuiltin(InterpState &S, CodePtr OpPC, const CallExpr *Call,
     APSInt Bits = popToAPSInt(S.Stk, BitsArgT);
 
 
-    std::vector<swizzle::access_pattern> patterns;
+    std::vector<swizzle::AccessPattern> patterns;
     for (auto i = 2u; i < Call->getNumArgs(); i += 3) {
       APSInt PatternCols[3];
       
@@ -3112,14 +3112,14 @@ bool InterpretBuiltin(InterpState &S, CodePtr OpPC, const CallExpr *Call,
         PatternCols[j] = popToAPSInt(S.Stk, ArgT);
       }
 
-      patterns.emplace_back(swizzle::access_pattern { 
+      patterns.emplace_back(swizzle::AccessPattern { 
         (uint32_t)PatternCols[0].getZExtValue(),
         (uint32_t)PatternCols[1].getZExtValue(),
         (uint32_t)PatternCols[2].getZExtValue() 
       });
     }
 
-    const auto result = swizzle::swizzle_solver::get_swizzle_solution((int)Bits.getExtValue(), patterns);
+    const auto result = swizzle::SwizzleSolver::getSwizzleSolution((int)Bits.getExtValue(), patterns);
 
     if(!result.has_value()) 
       pushInteger(S, (1u << ((int)RowIndex.getExtValue())), Call->getType());

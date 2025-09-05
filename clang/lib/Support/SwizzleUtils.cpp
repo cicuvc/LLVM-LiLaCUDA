@@ -5,24 +5,24 @@
 namespace clang {
 namespace swizzle {
 
-std::unordered_map<swizzle_key, std::optional<swizzle_solver::solution_type>>
-    swizzle_solver::cache;
+std::unordered_map<SwizzleKey, std::optional<SwizzleSolver::SolutionType>>
+    SwizzleSolver::cache;
 
-swizzle_key::swizzle_key(int _bits, const std::vector<access_pattern> &_pattern)
+SwizzleKey::SwizzleKey(int _bits, const std::vector<AccessPattern> &_pattern)
     : bits{_bits}, hash{}, patterns{} {
   for (auto i : _pattern) {
     std::sort(i.begin(), i.end());
     patterns.push_back(i);
-    hash ^= std::hash<access_pattern>{}(i);
+    hash ^= std::hash<AccessPattern>{}(i);
   }
   std::sort(patterns.begin(), patterns.end(),
-            [](const access_pattern &l, const access_pattern &r) {
-              return std::hash<access_pattern>{}(l) <
-                     std::hash<access_pattern>{}(r);
+            [](const AccessPattern &l, const AccessPattern &r) {
+              return std::hash<AccessPattern>{}(l) <
+                     std::hash<AccessPattern>{}(r);
             });
 }
 
-bool swizzle_key::operator==(const swizzle_key &_other) const noexcept {
+bool SwizzleKey::operator==(const SwizzleKey &_other) const noexcept {
   if (_other.hash != hash)
     return false;
   if (_other.patterns.size() != patterns.size())
@@ -34,21 +34,21 @@ bool swizzle_key::operator==(const swizzle_key &_other) const noexcept {
   return true;
 }
 
-std::optional<swizzle_solver::solution_type>
-swizzle_solver::solve(int bits,
-                      const std::vector<access_pattern> &patterns) noexcept {
+std::optional<SwizzleSolver::SolutionType>
+SwizzleSolver::solve(int bits,
+                      const std::vector<AccessPattern> &patterns) noexcept {
   const auto bit_mask = (1u << bits) - 1;
   
   for(const auto& i: patterns){
-    if(!check_pattern(i)) return std::optional<solution_type>{};
+    if(!checkPattern(i)) return std::optional<SolutionType>{};
   }
 
-  std::vector<ker_space_basis> w; // kernal space vectors.
+  std::vector<KerSpaceBasis> w; // kernal space vectors.
   // {v, d} means vector keeps dim 'd' as primary dimension and use it to
   // eliminate dimension of any other vectors
 
   // maintaining patterns to be elimiated by vectors from w
-  std::vector<access_pattern> elim_patterns{patterns};
+  std::vector<AccessPattern> elim_patterns{patterns};
 
   // record used primary dimensions
   auto prohibited_bits = 0u;
@@ -75,14 +75,14 @@ swizzle_solver::solve(int bits,
       // if patterns keep their ranks, the w \cap {vec} cannot represent any
       // vector from the image space of P_i
       auto rank_lost = false;
-      std::vector<access_pattern> next_elim_patterns{elim_patterns};
+      std::vector<AccessPattern> next_elim_patterns{elim_patterns};
       for (auto &p : next_elim_patterns) {
         for (auto i = 0; i < 3; i++) {
           if ((p[i] >> dim_bit) & 0x1)
             p[i] ^= vec;
         }
 
-        if (!check_pattern(p)) {
+        if (!checkPattern(p)) {
           rank_lost = true;
           break;
         }
@@ -99,7 +99,7 @@ swizzle_solver::solve(int bits,
     }
     // required step cannot be resolved so no solution
     if (!step_solved)
-      return std::optional<solution_type>{};
+      return std::optional<SolutionType>{};
   }
 
   // simplify the w space to make sure all non-free dimension depend only on
@@ -145,7 +145,7 @@ swizzle_solver::solve(int bits,
           std::array<uint32_t, 3> candidate{gemv(basic_solution, perm[0]),
                                             gemv(basic_solution, perm[1]),
                                             gemv(basic_solution, perm[2])};
-          auto diags = count_diag(bits, candidate);
+          auto diags = countDiag(bits, candidate);
           if (min_diag > diags) {
             opt_ans = candidate;
             min_diag = diags;
@@ -155,7 +155,7 @@ swizzle_solver::solve(int bits,
     }
   }
 
-  return std::optional<solution_type>{{opt_ans, min_diag}};
+  return std::optional<SolutionType>{{opt_ans, min_diag}};
 }
 
 } // namespace swizzle

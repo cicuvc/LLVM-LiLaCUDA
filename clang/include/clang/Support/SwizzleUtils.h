@@ -10,35 +10,35 @@
 namespace clang {
 namespace swizzle {
 
-using access_pattern = std::array<uint32_t, 3>;
-using ker_space_basis = std::tuple<uint32_t, int>;
+using AccessPattern = std::array<uint32_t, 3>;
+using KerSpaceBasis = std::tuple<uint32_t, int>;
 
-struct swizzle_solver;
-struct swizzle_key;
+struct SwizzleSolver;
+struct SwizzleKey;
 
-struct swizzle_key {
+struct SwizzleKey {
   int bits;
   int hash;
-  std::vector<access_pattern> patterns;
+  std::vector<AccessPattern> patterns;
 
-  swizzle_key(int _bits, const std::vector<access_pattern> &_pattern);
+  SwizzleKey(int _bits, const std::vector<AccessPattern> &_pattern);
 
-  bool operator==(const swizzle_key &_other) const noexcept;
+  bool operator==(const SwizzleKey &_other) const noexcept;
 };
 
 } // namespace swizzle
 } // namespace clang
 
-template <> struct std::hash<clang::swizzle::swizzle_key> {
+template <> struct std::hash<clang::swizzle::SwizzleKey> {
   inline std::size_t
-  operator()(clang::swizzle::swizzle_key const &s) const noexcept {
+  operator()(clang::swizzle::SwizzleKey const &s) const noexcept {
     return s.hash;
   }
 };
 
-template <> struct std::hash<clang::swizzle::access_pattern> {
+template <> struct std::hash<clang::swizzle::AccessPattern> {
   std::size_t
-  operator()(clang::swizzle::access_pattern const &s) const noexcept {
+  operator()(clang::swizzle::AccessPattern const &s) const noexcept {
     return s[0] ^ s[1] ^ s[2];
   }
 };
@@ -46,19 +46,19 @@ template <> struct std::hash<clang::swizzle::access_pattern> {
 namespace clang {
 namespace swizzle {
 
-struct swizzle_solver {
-  using solution_type = std::tuple<std::array<uint32_t, 3>, int>;
+struct SwizzleSolver {
+  using SolutionType = std::tuple<std::array<uint32_t, 3>, int>;
 
-  static std::unordered_map<swizzle_key, std::optional<solution_type>> cache;
+  static std::unordered_map<SwizzleKey, std::optional<SolutionType>> cache;
 
   // Check if rank of access pattern == 3
-  static inline bool check_pattern(const access_pattern &ap) noexcept {
+  static inline bool checkPattern(const AccessPattern &ap) noexcept {
     return (ap[0] != ap[1]) && (ap[0] != ap[2]) && (ap[1] != ap[2]) &&
            ((ap[0] ^ ap[1]) != ap[2]) && (ap[0]) && ap[1] && ap[2];
   }
 
   // Count non-zero diagonal of swizzle matrix
-  static inline int count_diag(int bits,
+  static inline int countDiag(int bits,
                                const std::array<uint32_t, 3> &swizzle) noexcept {
 
     auto result = 1;
@@ -82,13 +82,13 @@ struct swizzle_solver {
   }
 
   // main procedure to solve swizzle matrix for given patterns
-  static std::optional<solution_type>
-  solve(int bits, const std::vector<access_pattern> &patterns) noexcept;
+  static std::optional<SolutionType>
+  solve(int bits, const std::vector<AccessPattern> &patterns) noexcept;
 
-  static inline std::optional<solution_type>
-  get_swizzle_solution(int _bits,
-                       const std::vector<access_pattern> &_pattern) noexcept {
-    swizzle_key key{_bits, _pattern};
+  static inline std::optional<SolutionType>
+  getSwizzleSolution(int _bits,
+                       const std::vector<AccessPattern> &_pattern) noexcept {
+    SwizzleKey key{_bits, _pattern};
     const auto it = cache.find(key);
     if (it != cache.end())
       return it->second;
