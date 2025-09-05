@@ -3358,10 +3358,16 @@ Sema::CheckBuiltinFunctionCall(FunctionDecl *FDecl, unsigned BuiltinID,
     break;
 
   case Builtin::BI__builtin_swizzle_solve:{
+    if(!LangOpts.CUDALinearLayoutExtensions){
+      Diag(TheCall->getBeginLoc(), diag::err_undeclared_use) << "__builtin_swizzle_solve";
+    }
     if(BuiltinSwizzleSolve(*this, TheCall)) return ExprError();
     break;
   }
   case Builtin::BI__builtin_f2_gemv:{
+    if(!LangOpts.CUDALinearLayoutExtensions){
+      Diag(TheCall->getBeginLoc(), diag::err_undeclared_use) << "__builtin_f2_gemv";
+    }
     if(TheCall->getNumArgs() < 1){
       Diag(TheCall->getBeginLoc(),
            diag::err_typecheck_call_too_few_args_at_least)

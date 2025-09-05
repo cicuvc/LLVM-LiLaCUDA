@@ -8696,6 +8696,11 @@ def fno_cuda_host_device_constexpr : Flag<["-"], "fno-cuda-host-device-constexpr
   HelpText<"Don't treat unattributed constexpr functions as __host__ __device__.">,
   MarshallingInfoNegativeFlag<LangOpts<"CUDAHostDeviceConstexpr">>;
 
+def fcuda_linear_layout_extensions : Flag<["-"], "fcuda-linear-layout-extensions">,
+  HelpText<"Enable linear layout builtins for CUDA">,
+  MarshallingInfoFlag<LangOpts<"CUDALinearLayoutExtensions">>;
+
+
 } // let Visibility = [CC1Option]
 
 //===----------------------------------------------------------------------===//

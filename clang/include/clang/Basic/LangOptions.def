@@ -245,6 +245,7 @@ LANGOPT(HLSLStrictAvailability, 1, 0, NotCompatible,
 LANGOPT(CUDAIsDevice      , 1, 0, NotCompatible, "compiling for CUDA device")
 LANGOPT(CUDAAllowVariadicFunctions, 1, 0, NotCompatible, "allowing variadic functions in CUDA device code")
 LANGOPT(CUDAHostDeviceConstexpr, 1, 1, NotCompatible, "treating unattributed constexpr functions as __host__ __device__")
+LANGOPT(CUDALinearLayoutExtensions, 1, 0, NotCompatible, "enable linear layout builtins")
 LANGOPT(GPUDeviceApproxTranscendentals, 1, 0, NotCompatible, "using approximate transcendental functions")
 LANGOPT(GPURelocatableDeviceCode, 1, 0, NotCompatible, "generate relocatable device code")
 LANGOPT(OffloadImplicitHostDeviceTemplates, 1, 0, NotCompatible, "assume template functions to be implicitly host device by default for CUDA/HIP")

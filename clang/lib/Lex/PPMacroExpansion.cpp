@@ -1774,6 +1774,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
               // denotes date of behavior change to support calling arbitrary
               // usual allocation and deallocation functions. Required by libc++
               return 201802;
+            case Builtin::BI__builtin_swizzle_solve:
+            case Builtin::BI__builtin_f2_gemv:
+              return static_cast<bool>(LangOpts.CUDALinearLayoutExtensions);
             default:
               // __has_builtin should return false for aux builtins.
               if (getBuiltinInfo().isAuxBuiltinID(BuiltinID))
