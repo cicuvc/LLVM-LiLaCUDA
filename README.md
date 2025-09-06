@@ -15,7 +15,7 @@ Supported clang builtins:
 
     - Rule based: Non-general solver. Produce constructed solution for simple cases where all $P_i$ are formed by 3 consecutive one-hot column vector. 
 
-    - Baseline solver: General solver with $ \mathcal{O}(2^{n}) $ worst-case time, guarantee solution found if exists, may not be optimal.
+    - Baseline solver: General solver with $\mathcal{O}(2^{n})$ worst-case time, guarantee solution found if exists, may not be optimal.
 
     - (In progress) Search-based solver: Memorized bi-direction search with state-compression, $\mathcal{O}(2^{4m}\cdot n)$ time, acceptable when $m\le5$, solution is guaranteed to be optimal.
 
